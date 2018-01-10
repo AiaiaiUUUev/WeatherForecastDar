@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">WeatherForecastKarlin</string>
+    <string name="hint_edit_text">Введите город</string>
+    <string name="temperature">%1$s %2$s</string>
+</resources>
