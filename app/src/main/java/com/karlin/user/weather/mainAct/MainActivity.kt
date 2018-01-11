@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity(), MainActivityContract.View {
 
     private val presenter = MainActivityPresenter()
     private var mRealm: Realm? = null
+    private var firstLaunch = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,16 +67,18 @@ class MainActivity : AppCompatActivity(), MainActivityContract.View {
 
         recycler_view!!.layoutManager = LinearLayoutManager(this)
 
-        Handler().postDelayed({ checkAvailability() }, 250)
+        checkAvailability()
 
 
         RxTextView
                 .textChanges(mainET)
                 .subscribe({ city ->
-                    if (city.length >= 2) {
+                    if (city.length >= 2 && firstLaunch) {
                         presenter.pushCity(city.toString())
                     } else if (city.isBlank()) {
                         recycler_view.visibility = View.INVISIBLE
+                    } else if (!firstLaunch) {
+                        firstLaunch = true
                     }
                 })
 
@@ -118,7 +121,6 @@ class MainActivity : AppCompatActivity(), MainActivityContract.View {
     override fun onResume() {
         super.onResume()
         presenter.bind()
-
     }
 
     override fun onDestroy() {
@@ -133,14 +135,18 @@ class MainActivity : AppCompatActivity(), MainActivityContract.View {
 
     }
 
-    var format = SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
+    private val format = SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
     @SuppressLint("SimpleDateFormat")
     private fun checkAvailability() {
+
         val list = mRealm!!.where(CitiesWeatherModel::class.java).findAll()
         val query = mRealm!!.where(CitiesRequest::class.java).findAll()
         if (list.size != 0) {
-            mainET.setText(query[0]?.nameCity)
+
+
             recycler_view!!.adapter = AdapterCities(mRealm!!.copyFromRealm(list), this)
+            mainET.setText(query[0]?.nameCity)
+//            Handler().postDelayed({},250)
 
             val currentTime = SimpleDateFormat("MM/dd/yyyy HH:mm:ss", Locale.US).format(Calendar.getInstance().time)
 
