@@ -9,7 +9,10 @@ import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 import android.util.Log
+import android.widget.Toast
 import com.karlin.user.weather.models.CitiesWeatherModel
+import com.karlin.user.weather.models.GetCitiesModel
+import com.karlin.user.weather.models.Prediction
 
 
 /**
@@ -45,7 +48,6 @@ class MainActivityPresenter : MainActivityContract.Presenter {
                 }))
     }
 
-
     private val tag = "qwerty"
 
     private fun loadCities(city: String) {
@@ -53,8 +55,11 @@ class MainActivityPresenter : MainActivityContract.Presenter {
         disposable.add(App.api!!.getCities("https://maps.googleapis.com/maps/api/place/autocomplete/json"
                 , city, "(cities)", "ru", "country:kz"
                 , "AIzaSyCJRNkELEbvJXW1fXOQEy5B0oU5Ca7sjtU")
-                .switchMap { Observable.fromIterable(it.predictions) }
-                .map { CitiesWeatherModel(it.structuredFormatting?.mainText!!, null, null) }
+                .flatMap { Observable.fromIterable(it.predictions) }
+                .map {
+                    CitiesWeatherModel(it.structuredFormatting?.mainText!!,
+                            null, null)
+                }
                 .toList()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -71,11 +76,14 @@ class MainActivityPresenter : MainActivityContract.Presenter {
     }
 
     private fun findWeather(cities: List<CitiesWeatherModel>) {
+
+
         Observable
                 .fromIterable(cities)
                 .flatMap { c ->
                     App.api?.getWeather("https://api.openweathermap.org/data/2.5/weather",
                             c.nameCity, "metric", "ru", "fcb1781d7b858573e652ddab5ef5f01b")!!
+//                            .delay(100, TimeUnit.MILLISECONDS)
                             .onErrorReturnItem(GetWeatherModel())
                             .doOnNext {
                                 it.city = CitiesWeatherModel(c.nameCity, "", "")
@@ -106,40 +114,62 @@ class MainActivityPresenter : MainActivityContract.Presenter {
         this.view = view
     }
 
+    override fun zip() {
+        Observable.zip(
 
-    /*override fun loadCitiesWeather() {
-        list.clear()
-        subject!!
-                .debounce(300, TimeUnit.MILLISECONDS)
-                .filter({ it -> return@filter !it.isBlank() })
-                .distinctUntilChanged()
-                .switchMap { t: String ->
-                    App.api!!.getCities("https://maps.googleapis.com/maps/api/place/autocomplete/json"
-                            , t, "(cities)", "ru", "country:kz"
-                            , "AIzaSyCJRNkELEbvJXW1fXOQEy5B0oU5Ca7sjtU")
-                }
-                .flatMap { t: GetCitiesModel ->
-                    Observable.fromIterable(t.predictions)
-                }
-                .doOnComplete {
-                    Log.d("FFFFFFF", "закончил итерацию")
-                }
-                .flatMap { t: Prediction ->
-                    App.api!!.getWeather("https://api.openweathermap.org/data/2.5/weather",
-                            t.structuredFormatting!!.mainText!!, "metric", "ru",
-                            "fcb1781d7b858573e652ddab5ef5f01b")
-                            .doOnError({ error -> error.take(1).delay(1, TimeUnit.SECONDS) })
-                }
-                .doOnNext { t -> list.add(t) }
-                .subscribeOn(Schedulers.io())
+                App.api!!.getCities("https://maps.googleapis.com/maps/api/place/autocomplete/json"
+                        , "as", "(cities)", "ru", "country:kz"
+                        , "AIzaSyCJRNkELEbvJXW1fXOQEy5B0oU5Ca7sjtU"),
+
+                App.api!!.getWeather("https://api.openweathermap.org/data/2.5/weather",
+                        "Astana", "metric", "ru",
+                        "fcb1781d7b858573e652ddab5ef5f01b"),
+
+                io.reactivex.functions.BiFunction<GetCitiesModel, GetWeatherModel, Weather> { t1, t2 ->
+                    Weather(t1, t2)
+                }).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({ t -> successLoadCities(t) },
-                        { t -> failedLoadCities(t) },
-                        { completeMethod() })
+                .subscribe({ t -> Toast.makeText(view as MainActivity, t.a.status, Toast.LENGTH_SHORT).show() },
+                { t ->
+            t.message })
 
+    }
 
-    }*/
+//    fun loadCitiesWeather() {
+////        list.clear()
+//        subject!!
+//                .debounce(300, TimeUnit.MILLISECONDS)
+//                .filter({ it -> return@filter !it.isBlank() })
+//                .distinctUntilChanged()
+//                .switchMap { t: String ->
+//                    App.api!!.getCities("https://maps.googleapis.com/maps/api/place/autocomplete/json"
+//                            , t, "(cities)", "ru", "country:kz"
+//                            , "AIzaSyCJRNkELEbvJXW1fXOQEy5B0oU5Ca7sjtU")
+//                }
+//                .flatMap { t: GetCitiesModel ->
+//                    Observable.fromIterable(t.predictions)
+//                }
+//                .doOnComplete {
+//                    Log.d("FFFFFFF", "закончил итерацию")
+//                }
+//                .flatMap { t: Prediction ->
+//                    App.api!!.getWeather("https://api.openweathermap.org/data/2.5/weather",
+//                            t.structuredFormatting!!.mainText!!, "metric", "ru",
+//                            "fcb1781d7b858573e652ddab5ef5f01b")
+//                            .doOnError({ error -> error.take(1).delay(1, TimeUnit.SECONDS) })
+//                }
+//                .doOnNext { t -> list.add(t) }
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe({ t -> successLoadCities(t) },
+//                        { t -> failedLoadCities(t) },
+//                        { completeMethod() })
+//
+//
+//    }
 
 
 }
+
+class Weather(val a: GetCitiesModel, val b: GetWeatherModel)
 

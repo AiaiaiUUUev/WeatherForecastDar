@@ -1,6 +1,8 @@
 package com.karlin.user.weather.mainAct
 
 import com.karlin.user.weather.models.CitiesWeatherModel
+import io.reactivex.Observable
+import java.util.*
 
 /**
  *
@@ -20,7 +22,7 @@ class MainActivityContract {
     interface Presenter {
         //        fun loadCitiesWeather(subject: PublishSubject<String>?)
         fun setView(view: MainActivityContract.View)
-
+        fun zip()
         fun pushCity(city: CharSequence)
         fun bind()
         fun unBind()

@@ -9,6 +9,7 @@ import android.os.Handler
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import com.jakewharton.rxbinding2.view.RxView
 import com.karlin.user.weather.R
 import kotlinx.android.synthetic.main.activity_main.*
 import com.jakewharton.rxbinding2.widget.RxTextView
@@ -70,11 +71,15 @@ class MainActivity : AppCompatActivity(), MainActivityContract.View {
         checkAvailability()
 
 
+        val a = presenter.zip()
+
+
         RxTextView
                 .textChanges(mainET)
                 .subscribe({ city ->
                     if (city.length >= 2 && firstLaunch) {
                         presenter.pushCity(city.toString())
+                        a
                     } else if (city.isBlank()) {
                         recycler_view.visibility = View.INVISIBLE
                     } else if (!firstLaunch) {
